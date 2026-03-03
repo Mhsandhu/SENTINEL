@@ -1,0 +1,26 @@
+{
+    "app_name": "SENTINEL",
+    "version": "1.0.0",
+    "tagline": "Secure Access & Touchless Control",
+    "face_recognition": {
+        "similarity_threshold": 0.80,
+        "num_samples_registration": 5,
+        "min_samples_required": 3
+    },
+    "gesture_control": {
+        "default_sensitivity": 5,
+        "swipe_threshold": 0.15,
+        "cooldown_frames": 15,
+        "camera_index": 0
+    },
+    "vault": {
+        "max_file_size_mb": 100,
+        "allowed_categories": ["Documents", "Photos", "Videos", "Others"],
+        "storage_dir": "vault_storage"
+    },
+    "camera": {
+        "width": 1280,
+        "height": 720,
+        "index": 0
+    }
+}

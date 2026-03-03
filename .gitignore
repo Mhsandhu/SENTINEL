@@ -1,0 +1,30 @@
+# ── Python ──────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# ── SENTINEL data ──────────────
+database/*.db
+vault_storage/
+screenshot_*.png
+*.log
+
+# ── IDE ────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ─────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Docker ─────────────────────
+# (don't ignore Dockerfile/.dockerignore)

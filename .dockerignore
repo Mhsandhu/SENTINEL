@@ -1,0 +1,16 @@
+# Ignore files that shouldn't go into the Docker image
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+*.db
+vault_storage/
+screenshot_*.png
+_verify.py
+*.log
