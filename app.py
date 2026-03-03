@@ -398,16 +398,31 @@ def gesture_page():
 
     col1, col2 = st.columns([3, 2])
 
+    # Detect if running on a cloud server (no camera available)
+    is_cloud = os.environ.get("STREAMLIT_SERVER_HEADLESS") == "true" or not os.path.exists("/dev/video0") and sys.platform == "linux"
+
     with col1:
         st.markdown("### Launch Controller")
 
-        st.markdown("""
-        <div class="hud-card">
-            <p>Opens a camera window for real-time gesture detection</p>
-            <p>Press <strong>Q</strong> in the camera window to stop</p>
-            <p>Gestures are mapped to system keyboard shortcuts</p>
-        </div>
-        """, unsafe_allow_html=True)
+        if is_cloud:
+            st.markdown("""
+            <div class="hud-card">
+                <h3>⚠️ Cloud Environment Detected</h3>
+                <p>Gesture control requires a <strong>local webcam</strong> and cannot run on cloud servers like Streamlit Cloud.</p>
+                <p>To use this feature, run SENTINEL locally:</p>
+                <p><code>pip install -r requirements.txt</code></p>
+                <p><code>streamlit run app.py</code></p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.warning("Gesture control is only available when running locally with a webcam.")
+        else:
+            st.markdown("""
+            <div class="hud-card">
+                <p>Opens a camera window for real-time gesture detection</p>
+                <p>Press <strong>Q</strong> in the camera window to stop</p>
+                <p>Gestures are mapped to system keyboard shortcuts</p>
+            </div>
+            """, unsafe_allow_html=True)
 
         new_sensitivity = st.slider("Sensitivity", 1, 10, sensitivity,
                                      help="Higher = more responsive, may cause false triggers")
@@ -416,12 +431,13 @@ def gesture_page():
             db.update_gesture_settings(st.session_state.user_id, True, new_sensitivity)
             sensitivity = new_sensitivity
 
-        if st.button("Start Gesture Control", type="primary", use_container_width=True):
-            logger.log_gesture_session_start(st.session_state.user_id)
-            script = os.path.join(PROJECT_ROOT, "modules", "gesture_control.py")
-            subprocess.Popen([sys.executable, script, str(sensitivity), str(st.session_state.user_id)])
-            st.success("Gesture control initialized — Camera window is active")
-            st.balloons()
+        if not is_cloud:
+            if st.button("Start Gesture Control", type="primary", use_container_width=True):
+                logger.log_gesture_session_start(st.session_state.user_id)
+                script = os.path.join(PROJECT_ROOT, "modules", "gesture_control.py")
+                subprocess.Popen([sys.executable, script, str(sensitivity), str(st.session_state.user_id)])
+                st.success("Gesture control initialized — Camera window is active")
+                st.balloons()
 
     with col2:
         st.markdown("### Gesture Reference")

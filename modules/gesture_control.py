@@ -351,6 +351,17 @@ class GestureController:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.38, color, 1)
             y += 28
 
+    @staticmethod
+    def camera_available():
+        """Check if a webcam is accessible (returns True/False without holding the device)."""
+        try:
+            cap = cv2.VideoCapture(0)
+            ok = cap.isOpened()
+            cap.release()
+            return ok
+        except Exception:
+            return False
+
     # ── Main loop ─────────────────────────────
     def run(self):
         """Open webcam and start gesture control loop."""
@@ -359,7 +370,8 @@ class GestureController:
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         if not cap.isOpened():
-            print("ERROR: Cannot open webcam.")
+            print("ERROR: Cannot open webcam. Gesture control requires a local camera.")
+            print("This feature does not work on cloud servers (e.g., Streamlit Cloud).")
             return
 
         print("=" * 55)
