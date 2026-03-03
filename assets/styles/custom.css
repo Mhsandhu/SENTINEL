@@ -1,123 +1,724 @@
-/* SENTINEL — Custom Streamlit CSS */
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  SENTINEL — CYBERPUNK HUD THEME                                  ║
+   ║  Matrix green · Neon cyan · Terminal aesthetic · HUD overlays     ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
 
-/* Main background */
+/* ── IMPORTS ───────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+/* ── CSS VARIABLES ─────────────────────────────────────── */
+:root {
+    --neon-green: #00ff41;
+    --neon-cyan: #00f0ff;
+    --neon-magenta: #ff00ff;
+    --neon-amber: #ffae00;
+    --neon-red: #ff0040;
+    --bg-dark: #050a0e;
+    --bg-panel: #0a1015;
+    --bg-card: #0d161c;
+    --bg-hover: #11222d;
+    --border-dim: #0f2b1d;
+    --border-glow: #00ff4133;
+    --border-cyan: #00f0ff22;
+    --text-primary: #c9d6df;
+    --text-dim: #4a6670;
+    --text-bright: #e8f0f4;
+    --scanline: rgba(0, 255, 65, 0.03);
+    --font-display: 'Orbitron', monospace;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'Share Tech Mono', monospace;
+    --glow-green: 0 0 10px #00ff4140, 0 0 40px #00ff4115;
+    --glow-cyan: 0 0 10px #00f0ff40, 0 0 40px #00f0ff15;
+}
+
+/* ── GLOBAL BACKGROUND ─────────────────────────────────── */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
+    background: var(--bg-dark) !important;
+    background-image:
+        linear-gradient(var(--border-dim) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-dim) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 0%, #00ff4108 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, #00f0ff06 0%, transparent 50%) !important;
+    background-size:
+        80px 80px,
+        80px 80px,
+        100% 100%,
+        100% 100% !important;
+    font-family: var(--font-body) !important;
+    color: var(--text-primary) !important;
 }
 
+/* Scanline overlay */
+[data-testid="stAppViewContainer"]::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        var(--scanline) 2px,
+        var(--scanline) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+}
+
+/* ── SIDEBAR ───────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0f0c29 0%, #1a1a2e 100%);
-    border-right: 1px solid #2a2a4a;
+    background: linear-gradient(180deg, #050a0e 0%, #081210 40%, #060d0a 100%) !important;
+    border-right: 1px solid var(--neon-green) !important;
+    box-shadow: 2px 0 20px #00ff4120;
 }
 
-/* Headers */
-h1, h2, h3 {
-    color: #00d4ff !important;
+[data-testid="stSidebar"]::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 1px; height: 100%;
+    background: linear-gradient(180deg, transparent, var(--neon-green), transparent);
+    animation: sidebarPulse 3s ease-in-out infinite;
 }
 
-/* Cards */
-.sentinel-card {
-    background: rgba(26, 26, 46, 0.8);
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 10px 0;
-    backdrop-filter: blur(10px);
+@keyframes sidebarPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
 }
 
-/* Stat cards */
-.stat-card {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    border: 1px solid #00d4ff33;
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
+/* ── TYPOGRAPHY ────────────────────────────────────────── */
+h1 {
+    font-family: var(--font-display) !important;
+    color: var(--neon-green) !important;
+    text-shadow: var(--glow-green) !important;
+    letter-spacing: 3px !important;
+    text-transform: uppercase !important;
 }
 
-.stat-number {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #00d4ff;
+h2 {
+    font-family: var(--font-display) !important;
+    color: var(--neon-cyan) !important;
+    text-shadow: var(--glow-cyan) !important;
+    letter-spacing: 2px !important;
+    font-size: 1.3rem !important;
+    text-transform: uppercase !important;
 }
 
-.stat-label {
-    font-size: 0.85rem;
-    color: #8888aa;
+h3 {
+    font-family: var(--font-display) !important;
+    color: var(--neon-green) !important;
+    letter-spacing: 1.5px !important;
+    font-size: 1.05rem !important;
+    text-transform: uppercase !important;
 }
 
-/* Success/Error messages */
-.success-msg {
-    background: rgba(0, 200, 100, 0.1);
-    border-left: 4px solid #00c864;
-    padding: 10px 15px;
-    border-radius: 0 8px 8px 0;
-    margin: 10px 0;
+p, span, div, label {
+    font-family: var(--font-body) !important;
+    letter-spacing: 0.3px;
 }
 
-.error-msg {
-    background: rgba(255, 50, 50, 0.1);
-    border-left: 4px solid #ff3232;
-    padding: 10px 15px;
-    border-radius: 0 8px 8px 0;
-    margin: 10px 0;
-}
-
-/* Buttons */
-.stButton > button {
-    border: 1px solid #00d4ff;
-    color: #00d4ff;
-    background: transparent;
-    border-radius: 8px;
+/* ── HUD CARD ──────────────────────────────────────────── */
+.hud-card {
+    background: linear-gradient(135deg, #0a1a12 0%, #0d161c 100%);
+    border: 1px solid #00ff4125;
+    border-radius: 2px;
+    padding: 24px 20px;
+    margin: 8px 0;
+    position: relative;
+    overflow: hidden;
     transition: all 0.3s ease;
 }
 
+.hud-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+}
+
+.hud-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 30%; height: 2px;
+    background: linear-gradient(90deg, var(--neon-green), transparent);
+}
+
+.hud-card:hover {
+    border-color: #00ff4150;
+    box-shadow: var(--glow-green);
+    transform: translateY(-1px);
+}
+
+.hud-card h3 {
+    margin: 0 0 8px 0 !important;
+    font-size: 0.9rem !important;
+}
+
+.hud-card p {
+    color: var(--text-dim) !important;
+    font-size: 0.88rem !important;
+    margin: 0 !important;
+}
+
+/* ── STAT CARDS ────────────────────────────────────────── */
+.cyber-stat {
+    background: linear-gradient(180deg, #0a1a1200 0%, #00ff4108 100%);
+    border: 1px solid #00ff4120;
+    border-radius: 0;
+    padding: 20px 16px;
+    text-align: center;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+.cyber-stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+.cyber-stat-number {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--neon-green);
+    text-shadow: 0 0 20px #00ff4140;
+    letter-spacing: 2px;
+}
+
+.cyber-stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 6px;
+}
+
+.cyber-stat-icon {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 8px #00ff4160);
+}
+
+/* ── BUTTONS ───────────────────────────────────────────── */
+.stButton > button {
+    font-family: var(--font-display) !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
+    border: 1px solid var(--neon-green) !important;
+    color: var(--neon-green) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 8px 24px !important;
+    transition: all 0.3s ease !important;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+
 .stButton > button:hover {
-    background: #00d4ff22;
-    border-color: #00ffff;
-    color: #00ffff;
+    background: #00ff4115 !important;
+    border-color: var(--neon-green) !important;
+    color: #00ff90 !important;
+    box-shadow: var(--glow-green) !important;
+    text-shadow: 0 0 10px var(--neon-green);
 }
 
-/* Log timeline */
+.stButton > button:active {
+    background: #00ff4125 !important;
+    transform: scale(0.98);
+}
+
+/* Primary button */
+.stButton > button[kind="primary"],
+button[data-testid="stBaseButton-primary"] {
+    background: linear-gradient(135deg, #00ff4120 0%, #00ff4108 100%) !important;
+    border-color: var(--neon-green) !important;
+    box-shadow: inset 0 0 20px #00ff4110 !important;
+}
+
+button[data-testid="stBaseButton-primary"]:hover {
+    background: linear-gradient(135deg, #00ff4135 0%, #00ff4118 100%) !important;
+    box-shadow: var(--glow-green), inset 0 0 30px #00ff4120 !important;
+}
+
+/* ── TEXT INPUTS ───────────────────────────────────────── */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea {
+    font-family: var(--font-mono) !important;
+    background: #050a0e !important;
+    border: 1px solid #00ff4125 !important;
+    border-radius: 0 !important;
+    color: var(--text-bright) !important;
+    caret-color: var(--neon-green) !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+    border-color: var(--neon-green) !important;
+    box-shadow: 0 0 10px #00ff4120 !important;
+}
+
+/* ── SELECT BOX ────────────────────────────────────────── */
+.stSelectbox > div > div {
+    background: #050a0e !important;
+    border: 1px solid #00ff4125 !important;
+    border-radius: 0 !important;
+    color: var(--text-bright) !important;
+}
+
+/* ── SLIDER ────────────────────────────────────────────── */
+.stSlider > div > div > div > div {
+    background: var(--neon-green) !important;
+}
+
+.stSlider [data-testid="stThumbValue"] {
+    font-family: var(--font-mono) !important;
+    color: var(--neon-green) !important;
+}
+
+/* ── TABS ──────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0;
+    background: transparent;
+    border-bottom: 1px solid #00ff4120;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-family: var(--font-display) !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
+    color: var(--text-dim) !important;
+    border-radius: 0 !important;
+    padding: 12px 24px !important;
+    border: 1px solid transparent !important;
+    transition: all 0.3s ease;
+}
+
+.stTabs [aria-selected="true"] {
+    color: var(--neon-green) !important;
+    border-color: var(--neon-green) !important;
+    background: #00ff4108 !important;
+    text-shadow: 0 0 10px #00ff4140;
+    border-bottom: 2px solid var(--neon-green) !important;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--neon-cyan) !important;
+    background: #00f0ff08 !important;
+}
+
+/* ── EXPANDER ──────────────────────────────────────────── */
+details {
+    border: 1px solid #00ff4115 !important;
+    border-radius: 0 !important;
+    background: var(--bg-card) !important;
+}
+
+details summary {
+    font-family: var(--font-mono) !important;
+}
+
+/* ── METRIC ────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: linear-gradient(180deg, #0a1a1200 0%, #00ff4108 100%);
+    border: 1px solid #00ff4120;
+    padding: 16px;
+    border-radius: 0;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+[data-testid="stMetric"] label {
+    font-family: var(--font-mono) !important;
+    color: var(--text-dim) !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 0.7rem !important;
+}
+
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+    font-family: var(--font-display) !important;
+    color: var(--neon-green) !important;
+    text-shadow: 0 0 15px #00ff4130;
+}
+
+/* ── DIVIDER ───────────────────────────────────────────── */
+hr {
+    border: none !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, #00ff4130, var(--neon-green), #00ff4130, transparent) !important;
+    margin: 24px 0 !important;
+}
+
+/* ── FILE UPLOADER ─────────────────────────────────────── */
+[data-testid="stFileUploader"] {
+    border: 1px dashed #00ff4130 !important;
+    border-radius: 0 !important;
+    background: #00ff4105 !important;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--neon-green) !important;
+    background: #00ff4110 !important;
+}
+
+/* ── CAMERA ────────────────────────────────────────────── */
+[data-testid="stCameraInput"] {
+    border: 2px solid #00ff4130 !important;
+    border-radius: 0 !important;
+    overflow: hidden;
+    box-shadow: 0 0 20px #00ff4110;
+}
+
+/* ── ALERTS ────────────────────────────────────────────── */
+[data-testid="stAlert"] {
+    border-radius: 0 !important;
+    font-family: var(--font-mono) !important;
+}
+
+/* ── SCROLLBAR ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #00ff4130;
+    border: 1px solid #00ff4120;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #00ff4160;
+}
+
+/* ── SENTINEL BRAND HEADER ─────────────────────────────── */
+.sentinel-logo {
+    text-align: center;
+    padding: 40px 0 20px 0;
+    position: relative;
+}
+
+.sentinel-logo h1 {
+    font-family: var(--font-display) !important;
+    font-size: 3.5rem !important;
+    color: var(--neon-green) !important;
+    text-shadow: 0 0 30px #00ff4150, 0 0 60px #00ff4120 !important;
+    margin: 0 !important;
+    letter-spacing: 8px !important;
+    animation: logoGlow 4s ease-in-out infinite;
+}
+
+.sentinel-logo .tagline {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 8px;
+}
+
+.sentinel-logo .version {
+    font-family: var(--font-mono);
+    color: #00ff4140;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    margin-top: 4px;
+}
+
+@keyframes logoGlow {
+    0%, 100% { text-shadow: 0 0 30px #00ff4130, 0 0 60px #00ff4110; }
+    50% { text-shadow: 0 0 40px #00ff4160, 0 0 80px #00ff4125, 0 0 120px #00ff4110; }
+}
+
+/* ── AUTH BOX ──────────────────────────────────────────── */
+.auth-container {
+    background: linear-gradient(180deg, #0a15100c 0%, #0d161c 100%);
+    border: 1px solid #00ff4118;
+    padding: 30px;
+    position: relative;
+}
+
+.auth-container::before {
+    content: '[ AUTHENTICATION REQUIRED ]';
+    position: absolute;
+    top: -10px; left: 20px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--neon-green);
+    background: var(--bg-dark);
+    padding: 0 10px;
+    letter-spacing: 2px;
+}
+
+/* ── LOG ENTRIES ───────────────────────────────────────── */
 .log-entry {
-    border-left: 2px solid #00d4ff;
-    padding: 8px 15px;
-    margin: 5px 0;
-    font-size: 0.9rem;
+    border-left: 2px solid #00ff4130;
+    padding: 10px 16px;
+    margin: 4px 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    background: #00ff4105;
+    transition: all 0.2s ease;
+    color: var(--text-primary);
 }
 
-.log-success { border-left-color: #00c864; }
-.log-failed  { border-left-color: #ff3232; }
-.log-info    { border-left-color: #ffaa00; }
+.log-entry:hover {
+    background: #00ff4110;
+    border-left-color: var(--neon-green);
+}
 
-/* Gesture guide cards */
+.log-success { border-left-color: var(--neon-green) !important; }
+.log-failed  { border-left-color: var(--neon-red) !important; }
+.log-info    { border-left-color: var(--neon-amber) !important; }
+
+.log-timestamp {
+    float: right;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+}
+
+/* ── HUD STATUS BAR ────────────────────────────────────── */
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #00ff4108;
+    border: 1px solid #00ff4115;
+    padding: 8px 16px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.status-online {
+    color: var(--neon-green);
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ── GESTURE CARD ──────────────────────────────────────── */
 .gesture-card {
     display: inline-block;
-    background: rgba(0, 212, 255, 0.05);
-    border: 1px solid #00d4ff33;
-    border-radius: 10px;
-    padding: 12px;
-    margin: 5px;
+    background: #00ff4108;
+    border: 1px solid #00ff4118;
+    border-radius: 0;
+    padding: 14px 18px;
+    margin: 4px;
     text-align: center;
-    min-width: 120px;
+    min-width: 130px;
+    transition: all 0.3s ease;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
 }
 
-/* Vault file cards */
-.file-card {
-    background: rgba(26, 26, 46, 0.6);
-    border: 1px solid #2a2a4a;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 5px 0;
+.gesture-card:hover {
+    background: #00ff4118;
+    border-color: var(--neon-green);
+    box-shadow: var(--glow-green);
 }
 
-/* Camera input */
-[data-testid="stCameraInput"] {
-    border: 2px solid #00d4ff44;
-    border-radius: 12px;
-    overflow: hidden;
+.gesture-icon {
+    font-size: 1.8rem;
+    display: block;
+    margin-bottom: 6px;
 }
 
-/* Separator */
-hr {
-    border-color: #2a2a4a;
+.gesture-name {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    color: var(--neon-green);
+    letter-spacing: 1px;
+}
+
+.gesture-action {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+/* ── VAULT STATUS ──────────────────────────────────────── */
+.vault-status {
+    background: linear-gradient(135deg, #0a1a12 0%, #0d1a20 100%);
+    border: 1px solid #00ff4118;
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+
+/* ── DOWNLOAD BUTTON ───────────────────────────────────── */
+.stDownloadButton > button {
+    font-family: var(--font-mono) !important;
+    border: 1px solid var(--neon-cyan) !important;
+    color: var(--neon-cyan) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+}
+
+.stDownloadButton > button:hover {
+    background: #00f0ff12 !important;
+    box-shadow: var(--glow-cyan) !important;
+}
+
+/* ── SIDEBAR NAV BUTTONS ───────────────────────────────── */
+[data-testid="stSidebar"] .stButton > button {
+    font-family: var(--font-mono) !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 1.5px !important;
+    text-align: left !important;
+    border: 1px solid transparent !important;
+    border-left: 2px solid #00ff4130 !important;
+    border-radius: 0 !important;
+    padding: 10px 16px !important;
+    clip-path: none;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    border-color: transparent !important;
+    border-left: 2px solid var(--neon-green) !important;
+    background: #00ff410d !important;
+}
+
+[data-testid="stSidebar"] button[data-testid="stBaseButton-primary"] {
+    border-left: 2px solid var(--neon-green) !important;
+    background: #00ff4112 !important;
+    color: var(--neon-green) !important;
+}
+
+/* ── SIDEBAR PROFILE ───────────────────────────────────── */
+.sidebar-profile {
+    text-align: center;
+    padding: 12px 0;
+}
+
+.sidebar-profile .avatar {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.sidebar-profile .name {
+    font-family: var(--font-display);
+    color: var(--neon-green);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+}
+
+.sidebar-profile .role {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* ── VOICE COMMAND ─────────────────────────────────────── */
+.voice-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #00f0ff08;
+    border: 1px solid #00f0ff20;
+    padding: 12px 18px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--neon-cyan);
+}
+
+.voice-indicator.active {
+    border-color: var(--neon-cyan);
+    box-shadow: var(--glow-cyan);
+    animation: voicePulse 1.5s infinite;
+}
+
+@keyframes voicePulse {
+    0%, 100% { box-shadow: 0 0 5px #00f0ff20; }
+    50% { box-shadow: 0 0 20px #00f0ff40, 0 0 40px #00f0ff15; }
+}
+
+.voice-wave {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.voice-wave span {
+    display: inline-block;
+    width: 3px;
+    background: var(--neon-cyan);
+    animation: wave 1s ease-in-out infinite;
+}
+
+.voice-wave span:nth-child(1) { height: 8px; animation-delay: 0s; }
+.voice-wave span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+.voice-wave span:nth-child(3) { height: 20px; animation-delay: 0.2s; }
+.voice-wave span:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+.voice-wave span:nth-child(5) { height: 8px; animation-delay: 0.4s; }
+
+@keyframes wave {
+    0%, 100% { transform: scaleY(0.5); }
+    50% { transform: scaleY(1.2); }
+}
+
+/* ── PROGRESS BAR ──────────────────────────────────────── */
+.stProgress > div > div > div > div {
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan)) !important;
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+/* ── FORM ──────────────────────────────────────────────── */
+[data-testid="stForm"] {
+    background: var(--bg-card) !important;
+    border: 1px solid #00ff4115 !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+}
+
+/* ── CODE BLOCKS ───────────────────────────────────────── */
+code {
+    font-family: var(--font-mono) !important;
+    background: #00ff4110 !important;
+    color: var(--neon-green) !important;
+    border: 1px solid #00ff4120;
+    border-radius: 0 !important;
+    padding: 2px 6px !important;
+}
+
+/* ── HIDDEN BRANDING ───────────────────────────────────── */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+/* ── RESPONSIVE ────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .sentinel-logo h1 {
+        font-size: 2rem !important;
+        letter-spacing: 4px !important;
+    }
+    .cyber-stat-number {
+        font-size: 1.5rem;
+    }
 }

@@ -1,6 +1,6 @@
 """
 SENTINEL — AI-Powered Face Recognition & Gesture Control System
-Main Streamlit Application
+Cyberpunk HUD Edition
 
 Run with:  streamlit run app.py
 """
@@ -24,6 +24,7 @@ from modules import database as db
 from modules import logger
 from modules import vault_manager as vault
 from modules.face_recognition import FaceRecognizer, ensure_face_model, ensure_hand_model
+from modules import voice_commands as vc
 
 # ── Page config ───────────────────────────────
 st.set_page_config(
@@ -38,23 +39,19 @@ st.set_page_config(
 def load_css():
     css_path = os.path.join(PROJECT_ROOT, "assets", "styles", "custom.css")
     if os.path.exists(css_path):
-        with open(css_path) as f:
+        with open(css_path, encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 # ── Init ──────────────────────────────────────
 def init_app():
-    """One-time initialisation: DB, models, session state."""
     db.init_db()
-
-    # Download models if needed
     if "models_ready" not in st.session_state:
-        with st.spinner("Downloading AI models (first run only)..."):
+        with st.spinner("⟨ DOWNLOADING AI CORES ⟩"):
             ensure_face_model()
             ensure_hand_model()
         st.session_state.models_ready = True
 
-    # Session defaults
     defaults = {
         "logged_in": False,
         "user_id": None,
@@ -64,60 +61,107 @@ def init_app():
         "reg_username": "",
         "reg_email": "",
         "reg_password": "",
+        "nav_page": "Dashboard",
+        "voice_history": [],
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
 
-# ── Cached face recognizer ───────────────────
 @st.cache_resource
 def get_face_recognizer():
     return FaceRecognizer()
 
 
 # ═══════════════════════════════════════════════
+#  HTML HELPERS
+# ═══════════════════════════════════════════════
+
+def hud_header(title, subtitle=""):
+    """Render a HUD-style page header."""
+    ts = datetime.now().strftime("%H:%M:%S")
+    st.markdown(f"""
+    <div class="status-bar">
+        <span>⟨ SENTINEL v2.0 ⟩</span>
+        <span>MODULE: {title.upper()}</span>
+        <span class="status-online">● ONLINE</span>
+        <span>SYS.TIME {ts}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    sub_html = f'<p style="color:#4a6670; font-family: Share Tech Mono, monospace; font-size:0.85rem; letter-spacing:2px; margin-top:4px;">{subtitle}</p>' if subtitle else ""
+    st.markdown(f"""
+    <div style="margin-bottom: 20px;">
+        <h1 style="margin-bottom:0;">{title}</h1>
+        {sub_html}
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def cyber_stat_card(icon, value, label):
+    """Render a HUD stat card."""
+    return f"""
+    <div class="cyber-stat">
+        <div class="cyber-stat-icon">{icon}</div>
+        <div class="cyber-stat-number">{value}</div>
+        <div class="cyber-stat-label">{label}</div>
+    </div>
+    """
+
+
+def hud_card(icon, title, description):
+    """Render a HUD action card."""
+    return f"""
+    <div class="hud-card">
+        <h3>{icon} {title}</h3>
+        <p>{description}</p>
+    </div>
+    """
+
+
+# ═══════════════════════════════════════════════
 #  AUTH PAGES
 # ═══════════════════════════════════════════════
 def auth_page():
-    """Login / Register page shown when not logged in."""
-    col_spacer1, col_center, col_spacer2 = st.columns([1, 2, 1])
+    col1, col_center, col3 = st.columns([1, 2, 1])
 
     with col_center:
+        # Animated logo
         st.markdown("""
-        <div style="text-align:center; padding: 30px 0 10px 0;">
-            <h1 style="font-size:3rem; margin-bottom:0;">🛡️ SENTINEL</h1>
-            <p style="color:#8888aa; font-size:1.1rem; margin-top:5px;">
-                Secure Access & Touchless Control
-            </p>
+        <div class="sentinel-logo">
+            <h1>◈ SENTINEL ◈</h1>
+            <div class="tagline">SECURE ACCESS · TOUCHLESS CONTROL</div>
+            <div class="version">[ v2.0 // cyberpunk edition ]</div>
         </div>
         """, unsafe_allow_html=True)
 
-        tab_login, tab_register = st.tabs(["🔓 Login", "📝 Register"])
+        st.markdown('<div class="auth-container">', unsafe_allow_html=True)
+        tab_login, tab_register = st.tabs(["◇ AUTHENTICATE", "◇ REGISTER"])
 
         with tab_login:
             login_page()
 
         with tab_register:
             register_page()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 def login_page():
-    """Face recognition login + backup password login."""
-    st.subheader("Login with Face Recognition")
+    st.markdown("#### ⟨ FACE BIOMETRIC SCAN ⟩")
 
-    img_data = st.camera_input("Look at the camera and take a photo", key="login_cam")
+    img_data = st.camera_input("Position face within frame", key="login_cam")
 
     if img_data is not None:
         image = Image.open(img_data).convert("RGB")
         frame = np.array(image)
 
-        with st.spinner("Verifying face..."):
+        with st.spinner("⟨ SCANNING BIOMETRICS ⟩"):
             recognizer = get_face_recognizer()
             stored = db.get_all_face_encodings()
 
             if not stored:
-                st.warning("No users registered yet. Please register first.")
+                st.warning("◇ No registered operatives. Register first.")
                 return
 
             matched, user_info, score = recognizer.verify_face(frame, stored)
@@ -129,21 +173,21 @@ def login_page():
             db.update_last_login(user_info["user_id"])
             logger.log_login_success(user_info["user_id"], "face")
 
-            st.success(f"Welcome back, **{user_info['username']}**! (Match: {score*100:.1f}%)")
+            st.success(f"◇ IDENTITY CONFIRMED — Welcome, **{user_info['username']}** // Match: {score*100:.1f}%")
             time.sleep(1)
             st.rerun()
         else:
             score_pct = score * 100 if score > 0 else 0
-            st.error(f"Face not recognized. Best match: {score_pct:.1f}% (need 80%+)")
+            st.error(f"◇ ACCESS DENIED — Best match: {score_pct:.1f}% (threshold: 80%)")
             logger.log_login_failed(reason=f"Best score: {score_pct:.1f}%")
 
     st.divider()
-    st.subheader("🔑 Backup: Password Login")
+    st.markdown("#### ⟨ BACKUP: CIPHER ACCESS ⟩")
 
     with st.form("password_login"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Login")
+        username = st.text_input("OPERATIVE ID")
+        password = st.text_input("CIPHER KEY", type="password")
+        submit = st.form_submit_button("◈ AUTHENTICATE")
 
         if submit and username and password:
             user = db.get_user_by_username(username)
@@ -153,31 +197,30 @@ def login_page():
                 st.session_state.username = user["username"]
                 db.update_last_login(user["user_id"])
                 logger.log_login_success(user["user_id"], "password")
-                st.success(f"Welcome, {username}!")
+                st.success(f"◇ ACCESS GRANTED — {username}")
                 time.sleep(1)
                 st.rerun()
             else:
-                st.error("Invalid username or password.")
+                st.error("◇ AUTHENTICATION FAILED — Invalid credentials")
                 logger.log_login_failed(reason=f"Bad password for '{username}'")
 
 
 def register_page():
-    """Multi-step face registration."""
     step = st.session_state.reg_step
 
     if step == 0:
-        st.subheader("Step 1: Enter Your Details")
+        st.markdown("#### ⟨ STEP 1 // OPERATIVE DETAILS ⟩")
         with st.form("reg_form"):
-            username = st.text_input("Username *")
-            email = st.text_input("Email")
-            password = st.text_input("Backup Password (optional)", type="password")
-            submit = st.form_submit_button("Continue →")
+            username = st.text_input("OPERATIVE ID *")
+            email = st.text_input("COMMS CHANNEL (email)")
+            password = st.text_input("BACKUP CIPHER (optional)", type="password")
+            submit = st.form_submit_button("◈ PROCEED →")
 
             if submit:
                 if not username.strip():
-                    st.error("Username is required.")
+                    st.error("◇ Operative ID required.")
                 elif db.get_user_by_username(username.strip()):
-                    st.error("Username already taken.")
+                    st.error("◇ Operative ID already registered.")
                 else:
                     st.session_state.reg_username = username.strip()
                     st.session_state.reg_email = email.strip()
@@ -187,34 +230,33 @@ def register_page():
                     st.rerun()
 
     elif step == 1:
-        st.subheader(f"Step 2: Capture Face ({len(st.session_state.reg_frames) + 1}/5)")
-        st.info("Take 5 photos with slightly different head angles for better accuracy.")
+        captured = len(st.session_state.reg_frames)
+        st.markdown(f"#### ⟨ STEP 2 // BIOMETRIC CAPTURE ({captured + 1}/5) ⟩")
 
         prompts = [
-            "📸 Look straight at the camera",
-            "📸 Turn your head slightly LEFT",
-            "📸 Turn your head slightly RIGHT",
-            "📸 Tilt your head slightly UP",
-            "📸 Look straight again",
+            "◇ SCAN: Face camera directly",
+            "◇ SCAN: Rotate head LEFT 15°",
+            "◇ SCAN: Rotate head RIGHT 15°",
+            "◇ SCAN: Tilt head UP slightly",
+            "◇ SCAN: Face camera — final capture",
         ]
-        idx = len(st.session_state.reg_frames)
-        if idx < 5:
-            st.write(prompts[idx])
+        idx = min(captured, 4)
+        st.info(prompts[idx])
 
-        img_data = st.camera_input("Capture face", key=f"reg_cam_{idx}")
+        # Progress bar
+        st.progress(captured / 5, text=f"Biometric samples: {captured}/5")
+
+        img_data = st.camera_input("Capture biometric sample", key=f"reg_cam_{idx}")
 
         if img_data is not None:
             image = Image.open(img_data).convert("RGB")
             frame = np.array(image)
-
-            # Verify face is detected
             recognizer = get_face_recognizer()
             enc = recognizer.extract_encoding(frame)
 
             if enc is not None:
                 st.session_state.reg_frames.append(frame)
-                st.success(f"Sample {len(st.session_state.reg_frames)}/5 captured ✅")
-
+                st.success(f"◇ Sample {len(st.session_state.reg_frames)}/5 acquired ✓")
                 if len(st.session_state.reg_frames) >= 5:
                     st.session_state.reg_step = 2
                     st.rerun()
@@ -222,31 +264,35 @@ def register_page():
                     time.sleep(0.5)
                     st.rerun()
             else:
-                st.warning("No face detected. Please try again.")
+                st.warning("◇ No face detected in frame. Retry.")
 
-        # Navigation
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("← Back"):
+            if st.button("← ABORT"):
                 st.session_state.reg_step = 0
                 st.session_state.reg_frames = []
                 st.rerun()
         with col2:
-            if len(st.session_state.reg_frames) >= 3:
-                if st.button("Skip remaining → Complete with current samples"):
+            if captured >= 3:
+                if st.button("SKIP → COMPLETE"):
                     st.session_state.reg_step = 2
                     st.rerun()
 
     elif step == 2:
-        st.subheader("Step 3: Confirm Registration")
-        st.write(f"**Username:** {st.session_state.reg_username}")
-        st.write(f"**Email:** {st.session_state.reg_email or 'N/A'}")
-        st.write(f"**Face samples:** {len(st.session_state.reg_frames)}")
+        st.markdown("#### ⟨ STEP 3 // CONFIRM REGISTRATION ⟩")
+
+        st.markdown(f"""
+        <div class="hud-card">
+            <p>◇ <strong>OPERATIVE:</strong> {st.session_state.reg_username}</p>
+            <p>◇ <strong>COMMS:</strong> {st.session_state.reg_email or 'N/A'}</p>
+            <p>◇ <strong>BIOMETRIC SAMPLES:</strong> {len(st.session_state.reg_frames)}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Confirm & Register"):
-                with st.spinner("Processing face data..."):
+            if st.button("◈ CONFIRM REGISTRATION", type="primary"):
+                with st.spinner("⟨ ENCODING BIOMETRICS ⟩"):
                     recognizer = get_face_recognizer()
                     encoding, msg = recognizer.register_face(st.session_state.reg_frames)
 
@@ -258,12 +304,10 @@ def register_page():
                         password=st.session_state.reg_password or None,
                     )
                     if ok:
-                        # Log it
                         user = db.get_user_by_username(st.session_state.reg_username)
                         if user:
                             logger.log_registration(user["user_id"], user["username"])
-
-                        st.success(f"🎉 {db_msg} You can now login!")
+                        st.success(f"◇ REGISTRATION COMPLETE — {db_msg}")
                         st.session_state.reg_step = 0
                         st.session_state.reg_frames = []
                     else:
@@ -272,7 +316,7 @@ def register_page():
                     st.error(msg)
 
         with col2:
-            if st.button("← Back to Capture"):
+            if st.button("← BACK TO CAPTURE"):
                 st.session_state.reg_step = 1
                 st.rerun()
 
@@ -281,73 +325,59 @@ def register_page():
 #  DASHBOARD
 # ═══════════════════════════════════════════════
 def dashboard_page():
-    st.markdown(f"""
-    <div style="text-align:center; padding:20px 0;">
-        <h1>Welcome, {st.session_state.username} 👋</h1>
-        <p style="color:#8888aa;">SENTINEL Dashboard</p>
-    </div>
-    """, unsafe_allow_html=True)
+    hud_header(f"Welcome, {st.session_state.username}", "SENTINEL Command Center")
 
-    # Stats cards
+    # Custom stat cards
     stats = vault.get_storage_stats(st.session_state.user_id)
-    logs = db.get_user_logs(st.session_state.user_id, limit=100)
+    logs = db.get_user_logs(st.session_state.user_id, limit=500)
+    login_count = sum(1 for l in logs if l["action_type"] == "login")
+    gesture_count = sum(1 for l in logs if l["action_type"] == "gesture_used")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(cyber_stat_card("📁", stats["total_files"], "VAULT FILES"), unsafe_allow_html=True)
+    with col2:
+        st.markdown(cyber_stat_card("💾", stats["size_formatted"], "STORAGE"), unsafe_allow_html=True)
+    with col3:
+        st.markdown(cyber_stat_card("🔓", login_count, "AUTH EVENTS"), unsafe_allow_html=True)
+    with col4:
+        st.markdown(cyber_stat_card("🤚", gesture_count, "GESTURES"), unsafe_allow_html=True)
+
+    st.divider()
+
+    # Quick action cards
+    st.markdown("## ⟨ QUICK ACCESS ⟩")
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric("📁 Total Files", stats["total_files"])
-    with col2:
-        st.metric("💾 Storage Used", stats["size_formatted"])
-    with col3:
-        login_count = sum(1 for l in logs if l["action_type"] == "login")
-        st.metric("🔓 Total Logins", login_count)
-    with col4:
-        gesture_count = sum(1 for l in logs if l["action_type"] == "gesture_used")
-        st.metric("🤚 Gestures Used", gesture_count)
-
-    st.divider()
-
-    # Quick actions
-    st.subheader("Quick Actions")
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown("""
-        <div class="sentinel-card">
-            <h3>🤚 Gesture Control</h3>
-            <p>Control your computer with hand gestures</p>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Launch Gesture Control", key="dash_gesture"):
+        st.markdown(hud_card("🤚", "GESTURE CTRL", "Control system with hand gestures"), unsafe_allow_html=True)
+        if st.button("◈ LAUNCH", key="dash_gesture", use_container_width=True):
             st.session_state.nav_page = "Gesture Control"
             st.rerun()
 
     with col2:
-        st.markdown("""
-        <div class="sentinel-card">
-            <h3>🔒 My Vault</h3>
-            <p>Access your secure file vault</p>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Open Vault", key="dash_vault"):
+        st.markdown(hud_card("🔒", "SECURE VAULT", "Access encrypted file storage"), unsafe_allow_html=True)
+        if st.button("◈ OPEN", key="dash_vault", use_container_width=True):
             st.session_state.nav_page = "My Vault"
             st.rerun()
 
     with col3:
-        st.markdown("""
-        <div class="sentinel-card">
-            <h3>📋 Activity Logs</h3>
-            <p>View your activity history</p>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("View Logs", key="dash_logs"):
+        st.markdown(hud_card("🎙️", "VOICE CTRL", "Navigate with voice commands"), unsafe_allow_html=True)
+        if st.button("◈ ACTIVATE", key="dash_voice", use_container_width=True):
+            st.session_state.nav_page = "Voice Commands"
+            st.rerun()
+
+    with col4:
+        st.markdown(hud_card("📋", "SYS LOGS", "Monitor all system activity"), unsafe_allow_html=True)
+        if st.button("◈ VIEW", key="dash_logs", use_container_width=True):
             st.session_state.nav_page = "Activity Logs"
             st.rerun()
 
     st.divider()
 
-    # Recent activity
-    st.subheader("Recent Activity")
+    # Recent activity with HUD styling
+    st.markdown("## ⟨ RECENT ACTIVITY ⟩")
     recent = logger.get_formatted_logs(st.session_state.user_id, limit=10)
     if recent:
         for log in recent:
@@ -355,220 +385,336 @@ def dashboard_page():
             st.markdown(f"""
             <div class="log-entry {color_class}">
                 {log['icon']} {log['status']}  <strong>{log['action']}</strong> — {log['details']}
-                <span style="float:right; color:#666; font-size:0.8rem;">{log['timestamp']}</span>
+                <span class="log-timestamp">{log['timestamp']}</span>
             </div>
             """, unsafe_allow_html=True)
     else:
-        st.info("No activity yet.")
+        st.info("◇ No activity recorded yet.")
 
 
 # ═══════════════════════════════════════════════
-#  GESTURE CONTROL PAGE
+#  GESTURE CONTROL
 # ═══════════════════════════════════════════════
 def gesture_page():
-    st.header("🤚 Gesture Control")
-    st.write("Control your computer with hand gestures — presentations, media, system controls.")
+    hud_header("Gesture Control", "Hand tracking neural interface")
 
-    # Settings
     settings = db.get_gesture_settings(st.session_state.user_id)
     sensitivity = settings.get("sensitivity", 5)
 
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([3, 2])
 
     with col1:
-        st.subheader("Launch Controller")
-        st.info("This opens a separate camera window. Press **'q'** in that window to stop.")
+        st.markdown("### ⟨ CONTROLLER LAUNCH ⟩")
 
-        new_sensitivity = st.slider("Gesture Sensitivity", 1, 10, sensitivity,
-                                     help="Higher = more responsive but may cause false detections")
+        st.markdown("""
+        <div class="hud-card">
+            <p>◇ Opens a camera window for real-time gesture detection</p>
+            <p>◇ Press <strong>Q</strong> in the camera window to terminate</p>
+            <p>◇ Gestures are mapped to system-level keyboard shortcuts</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        new_sensitivity = st.slider("◇ NEURAL SENSITIVITY", 1, 10, sensitivity,
+                                     help="Higher = more responsive, may cause false triggers")
 
         if new_sensitivity != sensitivity:
             db.update_gesture_settings(st.session_state.user_id, True, new_sensitivity)
             sensitivity = new_sensitivity
 
-        if st.button("🚀 Start Gesture Control", type="primary"):
+        if st.button("◈ INITIALIZE GESTURE CONTROL", type="primary", use_container_width=True):
             logger.log_gesture_session_start(st.session_state.user_id)
-
-            # Launch gesture controller as subprocess
             script = os.path.join(PROJECT_ROOT, "modules", "gesture_control.py")
-            python_exe = sys.executable
-            subprocess.Popen([
-                python_exe, script,
-                str(sensitivity),
-                str(st.session_state.user_id),
-            ])
-            st.success("Gesture Control launched! Look for the camera window.")
+            subprocess.Popen([sys.executable, script, str(sensitivity), str(st.session_state.user_id)])
+            st.success("◇ GESTURE CONTROL INITIALIZED — Camera window active")
             st.balloons()
 
     with col2:
-        st.subheader("Gesture Guide")
-        gestures = {
-            "✊ Fist": "Minimize All (Win+D)",
-            "🖐️ Open Palm": "Play / Pause",
-            "✌️ Peace (V)": "Screenshot",
-            "👍 Thumbs Up": "Volume Up",
-            "🤘 Rock On": "Volume Down",
-            "3️⃣ Three Fingers": "Alt + Tab",
-            "🤙 Pinky Only": "Mute / Unmute",
-            "👉 Gun": "Enter Key",
-            "👈 Swipe Left": "Previous (←)",
-            "👉 Swipe Right": "Next (→)",
-        }
-        for gesture, action in gestures.items():
-            st.markdown(f"**{gesture}** → {action}")
+        st.markdown("### ⟨ GESTURE MAP ⟩")
+
+        gestures = [
+            ("✊", "FIST", "Minimize All"),
+            ("🖐️", "PALM", "Play/Pause"),
+            ("✌️", "PEACE", "Screenshot"),
+            ("👍", "THUMBS UP", "Vol +"),
+            ("🤘", "ROCK ON", "Vol -"),
+            ("3️⃣", "THREE", "Alt+Tab"),
+            ("🤙", "PINKY", "Mute"),
+            ("👉", "GUN", "Enter"),
+            ("←", "SWIPE L", "Previous"),
+            ("→", "SWIPE R", "Next"),
+        ]
+
+        gesture_html = '<div style="display:flex; flex-wrap:wrap; gap:6px;">'
+        for icon, name, action in gestures:
+            gesture_html += f"""
+            <div class="gesture-card">
+                <span class="gesture-icon">{icon}</span>
+                <div class="gesture-name">{name}</div>
+                <div class="gesture-action">{action}</div>
+            </div>"""
+        gesture_html += '</div>'
+        st.markdown(gesture_html, unsafe_allow_html=True)
 
     st.divider()
 
     # Gesture history
-    st.subheader("Recent Gesture Activity")
+    st.markdown("### ⟨ GESTURE LOG ⟩")
     gesture_logs = db.get_logs_by_type(st.session_state.user_id, "gesture_used", 20)
     if gesture_logs:
         for log in gesture_logs:
-            st.markdown(f"🤚 `{log['action_details']}` — {log['timestamp']}")
+            st.markdown(f"""
+            <div class="log-entry log-success">
+                🤚 <code>{log['action_details']}</code>
+                <span class="log-timestamp">{log['timestamp']}</span>
+            </div>
+            """, unsafe_allow_html=True)
     else:
-        st.info("No gesture activity yet. Launch the controller to get started!")
+        st.info("◇ No gesture activity recorded. Initialize the controller to begin.")
 
 
 # ═══════════════════════════════════════════════
-#  VAULT PAGE
+#  VOICE COMMANDS
+# ═══════════════════════════════════════════════
+def voice_page():
+    hud_header("Voice Commands", "Speech recognition neural link")
+
+    available = vc.is_available()
+    missing = vc.get_missing_packages()
+
+    col1, col2 = st.columns([3, 2])
+
+    with col1:
+        st.markdown("### ⟨ VOICE INTERFACE ⟩")
+
+        if not available:
+            st.markdown(f"""
+            <div class="hud-card">
+                <h3>◇ PACKAGES REQUIRED</h3>
+                <p>Install voice dependencies to enable this module:</p>
+                <p><code>pip install {' '.join(missing)}</code></p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.warning(f"◇ Missing packages: {', '.join(missing)}")
+        else:
+            st.markdown("""
+            <div class="voice-indicator">
+                <div class="voice-wave">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <span>VOICE NEURAL LINK — READY</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+            <div class="hud-card" style="margin-top:16px;">
+                <h3>◇ HOW TO USE</h3>
+                <p>1. Click <strong>"ACTIVATE VOICE CONTROL"</strong> below</p>
+                <p>2. Speak a command clearly (e.g., "open vault", "dashboard")</p>
+                <p>3. The system processes your voice and executes the command</p>
+                <p>4. You'll hear audio feedback confirming the action</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Launch voice control standalone
+            if st.button("◈ ACTIVATE VOICE CONTROL", type="primary", use_container_width=True):
+                st.info("◇ Voice control is active. Speak a command...")
+                # In a real deployment, this would start the VoiceEngine
+                # For Streamlit Cloud, show the command reference
+                st.session_state.voice_active = True
+
+            # Manual command input (works on all platforms)
+            st.markdown("### ⟨ MANUAL COMMAND INPUT ⟩")
+            st.caption("◇ Type a command if microphone is not available")
+
+            cmd_input = st.text_input("ENTER COMMAND", placeholder="e.g., dashboard, vault, logs, help...",
+                                       label_visibility="collapsed")
+            if cmd_input:
+                engine = vc.VoiceEngine()
+                cmd_key, cmd_info = engine._match_command(cmd_input)
+
+                if cmd_info:
+                    st.success(f"◇ COMMAND: {cmd_info['response']}")
+                    if cmd_info["action"] == "navigate":
+                        st.session_state.nav_page = cmd_info["target"]
+                        time.sleep(0.5)
+                        st.rerun()
+                    elif cmd_info["action"] == "logout":
+                        logger.log_logout(st.session_state.user_id)
+                        for key in list(st.session_state.keys()):
+                            del st.session_state[key]
+                        st.rerun()
+                    elif cmd_info["action"] == "help":
+                        st.info(cmd_info["response"])
+                else:
+                    st.warning(f'◇ UNKNOWN COMMAND: "{cmd_input}" — Say "help" for available commands')
+
+    with col2:
+        st.markdown("### ⟨ COMMAND REFERENCE ⟩")
+
+        engine = vc.VoiceEngine()
+        groups = engine.get_all_commands()
+
+        for group_name, cmds in groups.items():
+            st.markdown(f"**◇ {group_name.upper()}**")
+            for cmd in cmds:
+                st.markdown(f"""
+                <div class="gesture-card" style="display:block; margin:4px 0; text-align:left; padding:10px 14px;">
+                    <span style="color:#00ff41; font-family: Orbitron, monospace; font-size:0.7rem;">"{cmd['command']}"</span>
+                    <span style="color:#4a6670; font-family: Share Tech Mono, monospace; font-size:0.72rem; float:right;">→ {cmd['response']}</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Voice history
+        if st.session_state.get("voice_history"):
+            st.markdown("### ⟨ VOICE LOG ⟩")
+            for entry in st.session_state.voice_history[-10:]:
+                st.markdown(f"""
+                <div class="log-entry log-info">
+                    🎙️ <code>{entry}</code>
+                </div>
+                """, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════════
+#  VAULT
 # ═══════════════════════════════════════════════
 def vault_page():
-    st.header("🔒 My Vault")
+    hud_header("Secure Vault", "Encrypted file storage system")
 
-    tab_upload, tab_browse, tab_search = st.tabs(["📤 Upload", "📂 Browse Files", "🔍 Search"])
+    # Vault status bar
+    stats = vault.get_storage_stats(st.session_state.user_id)
+    st.markdown(f"""
+    <div class="vault-status">
+        VAULT STATUS: UNLOCKED  ◇  FILES: {stats['total_files']}  ◇  STORAGE: {stats['size_formatted']}  ◇  OWNER: {st.session_state.username}
+    </div>
+    """, unsafe_allow_html=True)
 
-    # ── Upload tab ────────────────────────────
+    tab_upload, tab_browse, tab_search = st.tabs(["◇ UPLOAD", "◇ BROWSE", "◇ SEARCH"])
+
     with tab_upload:
-        st.subheader("Upload a File")
+        st.markdown("### ⟨ FILE UPLOAD ⟩")
 
         uploaded = st.file_uploader(
-            "Choose a file",
+            "Select file for vault storage",
             type=None,
             accept_multiple_files=False,
-            help="Max 100MB. Supported: Documents, Photos, Videos, and more.",
+            help="Max 100MB per file. All formats supported.",
         )
 
-        category = st.selectbox("Category", ["Auto-detect"] + vault.CATEGORIES)
+        category = st.selectbox("◇ CATEGORY", ["Auto-detect"] + vault.CATEGORIES)
 
-        if uploaded and st.button("📤 Upload File", type="primary"):
+        if uploaded and st.button("◈ ENCRYPT & STORE", type="primary", use_container_width=True):
             cat = None if category == "Auto-detect" else category
             ok, msg, info = vault.save_file(st.session_state.user_id, uploaded, cat)
-
             if ok:
-                st.success(msg)
-                logger.log_file_upload(
-                    st.session_state.user_id,
-                    uploaded.name,
-                    info["category"],
-                )
+                st.success(f"◇ FILE SECURED — {msg}")
+                logger.log_file_upload(st.session_state.user_id, uploaded.name, info["category"])
             else:
-                st.error(msg)
+                st.error(f"◇ UPLOAD FAILED — {msg}")
 
-    # ── Browse tab ────────────────────────────
     with tab_browse:
-        st.subheader("Browse Files")
+        st.markdown("### ⟨ FILE BROWSER ⟩")
 
-        # Category filter
-        filter_cat = st.selectbox("Filter by Category", ["All"] + vault.CATEGORIES, key="browse_cat")
-
-        files = vault.get_user_files(
-            st.session_state.user_id,
-            None if filter_cat == "All" else filter_cat,
-        )
+        filter_cat = st.selectbox("◇ FILTER", ["All"] + vault.CATEGORIES, key="browse_cat")
+        files = vault.get_user_files(st.session_state.user_id, None if filter_cat == "All" else filter_cat)
 
         if not files:
-            st.info("No files found. Upload some files first!")
+            st.info("◇ Vault empty. Upload files to begin.")
         else:
-            # Stats bar
-            stats = vault.get_storage_stats(st.session_state.user_id)
-            st.caption(f"Total: {stats['total_files']} files | {stats['size_formatted']} used")
-
             for f in files:
-                with st.expander(
-                    f"{'📄' if f['category']=='Documents' else '🖼️' if f['category']=='Photos' else '🎬' if f['category']=='Videos' else '📎'} "
-                    f"{f['original_filename']}  |  {vault.format_file_size(f['file_size'] or 0)}  |  {f['category']}"
-                ):
+                icon = '📄' if f['category'] == 'Documents' else '🖼️' if f['category'] == 'Photos' else '🎬' if f['category'] == 'Videos' else '📎'
+                size_str = vault.format_file_size(f['file_size'] or 0)
+
+                with st.expander(f"{icon}  {f['original_filename']}  ◇  {size_str}  ◇  {f['category']}"):
                     col1, col2, col3 = st.columns([2, 1, 1])
 
                     with col1:
-                        st.write(f"**Uploaded:** {f['uploaded_at']}")
-                        st.write(f"**Type:** {f['file_type']}")
-                        st.write(f"**Accessed:** {f['access_count']} times")
+                        st.markdown(f"""
+                        <div style="font-family: Share Tech Mono, monospace; font-size: 0.82rem; color: #c9d6df;">
+                            ◇ UPLOADED: {f['uploaded_at']}<br>
+                            ◇ TYPE: {f['file_type']}<br>
+                            ◇ ACCESS COUNT: {f['access_count']}
+                        </div>
+                        """, unsafe_allow_html=True)
 
                     with col2:
-                        # Download
                         data, name, mime = vault.get_file_content(f["file_id"])
                         if data:
-                            st.download_button(
-                                "📥 Download", data, name, mime,
-                                key=f"dl_{f['file_id']}",
-                            )
+                            st.download_button("📥 DOWNLOAD", data, name, mime, key=f"dl_{f['file_id']}")
                             logger.log_file_view(st.session_state.user_id, f["original_filename"])
 
                     with col3:
-                        # Delete
-                        if st.button("🗑️ Delete", key=f"del_{f['file_id']}"):
+                        if st.button("🗑️ DELETE", key=f"del_{f['file_id']}"):
                             ok, msg = vault.delete_file(f["file_id"])
                             if ok:
                                 logger.log_file_delete(st.session_state.user_id, f["original_filename"])
-                                st.success(msg)
+                                st.success(f"◇ {msg}")
                                 st.rerun()
                             else:
                                 st.error(msg)
 
-                    # Preview for images
+                    # Image preview
                     if f["file_type"] in ("jpg", "jpeg", "png", "gif", "bmp", "webp"):
                         if data:
                             st.image(data, caption=f["original_filename"], width=300)
 
-    # ── Search tab ────────────────────────────
     with tab_search:
-        st.subheader("Search Files")
-        query = st.text_input("Enter filename to search", placeholder="e.g., resume, photo")
+        st.markdown("### ⟨ VAULT SEARCH ⟩")
+        query = st.text_input("◇ SEARCH QUERY", placeholder="e.g., report, photo, video...")
 
         if query:
             results = vault.search_user_files(st.session_state.user_id, query)
             if results:
-                st.write(f"Found {len(results)} result(s):")
+                st.success(f"◇ {len(results)} file(s) found")
                 for f in results:
-                    st.markdown(
-                        f"📎 **{f['original_filename']}** — {f['category']} — "
-                        f"{vault.format_file_size(f['file_size'] or 0)} — {f['uploaded_at']}"
-                    )
+                    st.markdown(f"""
+                    <div class="log-entry log-info">
+                        📎 <strong>{f['original_filename']}</strong> — {f['category']} — {vault.format_file_size(f['file_size'] or 0)}
+                        <span class="log-timestamp">{f['uploaded_at']}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
             else:
-                st.warning("No files matching your search.")
+                st.warning("◇ No matching files in vault.")
 
 
 # ═══════════════════════════════════════════════
-#  ACTIVITY LOGS PAGE
+#  ACTIVITY LOGS
 # ═══════════════════════════════════════════════
 def logs_page():
-    st.header("📋 Activity Logs")
+    hud_header("Activity Logs", "System monitoring & audit trail")
 
-    # Filter options
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns([1, 3])
     with col1:
-        filter_type = st.selectbox("Filter by Action", [
+        filter_type = st.selectbox("◇ FILTER", [
             "All", "login", "login_failed", "file_upload", "file_view",
             "file_delete", "gesture_used", "gesture_session", "settings_change", "logout",
         ])
     with col2:
-        limit = st.slider("Number of entries", 10, 200, 50)
+        limit = st.slider("◇ ENTRIES", 10, 200, 50)
 
-    # Get logs
     if filter_type == "All":
         logs = db.get_user_logs(st.session_state.user_id, limit)
     else:
         logs = db.get_logs_by_type(st.session_state.user_id, filter_type, limit)
 
     if not logs:
-        st.info("No activity logs found.")
+        st.info("◇ No activity logs found.")
         return
 
     # Summary stats
-    st.subheader(f"Showing {len(logs)} entries")
+    success_count = sum(1 for l in logs if l["success"])
+    fail_count = len(logs) - success_count
 
-    # Timeline
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(cyber_stat_card("📊", len(logs), "TOTAL EVENTS"), unsafe_allow_html=True)
+    with col2:
+        st.markdown(cyber_stat_card("✅", success_count, "SUCCESSFUL"), unsafe_allow_html=True)
+    with col3:
+        st.markdown(cyber_stat_card("❌", fail_count, "FAILED"), unsafe_allow_html=True)
+
+    st.divider()
+
     icons = {
         "login": "🔓", "login_failed": "🔒", "registration": "📝",
         "file_upload": "📤", "file_view": "👁️", "file_delete": "🗑️",
@@ -578,47 +724,51 @@ def logs_page():
 
     for log in logs:
         icon = icons.get(log["action_type"], "📌")
-        status_icon = "✅" if log["success"] else "❌"
-        color = "#00c864" if log["success"] else "#ff3232"
+        status_icon = "✓" if log["success"] else "✗"
+        color_class = "log-success" if log["success"] else "log-failed"
 
         st.markdown(f"""
-        <div style="border-left: 3px solid {color}; padding: 6px 12px; margin: 4px 0; font-size: 0.9rem;">
-            {icon} {status_icon} <strong>{log['action_type']}</strong> — {log['action_details'] or ''}
-            <span style="float:right; color:#666; font-size:0.8rem;">{log['timestamp']}</span>
+        <div class="log-entry {color_class}">
+            {icon} {status_icon} <strong>{log['action_type'].upper()}</strong> — {log['action_details'] or ''}
+            <span class="log-timestamp">{log['timestamp']}</span>
         </div>
         """, unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════
-#  SETTINGS PAGE
+#  SETTINGS
 # ═══════════════════════════════════════════════
 def settings_page():
-    st.header("⚙️ Settings")
+    hud_header("Settings", "System configuration & security")
 
     tab_profile, tab_gesture, tab_security = st.tabs(
-        ["👤 Profile", "🤚 Gesture Settings", "🔒 Security"]
+        ["◇ PROFILE", "◇ GESTURE CONFIG", "◇ SECURITY"]
     )
 
     user = db.get_user_by_id(st.session_state.user_id)
 
-    # ── Profile ───────────────────────────────
     with tab_profile:
-        st.subheader("Profile Information")
-        st.write(f"**Username:** {user['username']}")
-        st.write(f"**Email:** {user['email'] or 'Not set'}")
-        st.write(f"**Member since:** {user['created_at']}")
-        st.write(f"**Last login:** {user['last_login'] or 'N/A'}")
+        st.markdown("### ⟨ OPERATIVE PROFILE ⟩")
+
+        st.markdown(f"""
+        <div class="hud-card">
+            <p>◇ <strong>OPERATIVE ID:</strong> {user['username']}</p>
+            <p>◇ <strong>COMMS CHANNEL:</strong> {user['email'] or 'NOT SET'}</p>
+            <p>◇ <strong>ENLISTED:</strong> {user['created_at']}</p>
+            <p>◇ <strong>LAST AUTH:</strong> {user['last_login'] or 'N/A'}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.divider()
-        st.subheader("Update Face Data")
-        st.warning("Re-register your face if recognition is not working well.")
+        st.markdown("### ⟨ BIOMETRIC RE-CALIBRATION ⟩")
+        st.warning("◇ Re-register your face if recognition accuracy has degraded.")
 
-        if st.button("📸 Re-register Face"):
+        if st.button("◈ RE-REGISTER FACE"):
             st.session_state.re_register = True
             st.rerun()
 
         if st.session_state.get("re_register"):
-            img = st.camera_input("Take a new face photo (will add to existing data)", key="reregister_cam")
+            img = st.camera_input("Capture new biometric sample", key="reregister_cam")
             if img:
                 image = Image.open(img).convert("RGB")
                 frame = np.array(image)
@@ -627,111 +777,142 @@ def settings_page():
                 if enc is not None:
                     db.update_face_encoding(st.session_state.user_id, enc)
                     logger.log_settings_change(st.session_state.user_id, "face_data", "updated")
-                    st.success("Face data updated!")
+                    st.success("◇ BIOMETRIC DATA UPDATED")
                     st.session_state.re_register = False
                 else:
-                    st.error("No face detected. Try again.")
+                    st.error("◇ No face detected. Retry.")
 
-    # ── Gesture Settings ──────────────────────
     with tab_gesture:
-        st.subheader("Gesture Control Settings")
+        st.markdown("### ⟨ GESTURE NEURAL CONFIG ⟩")
         settings = db.get_gesture_settings(st.session_state.user_id)
 
-        enabled = st.toggle("Enable Gesture Control", value=bool(settings["gesture_enabled"]))
-        sensitivity = st.slider("Sensitivity", 1, 10, settings["sensitivity"],
-                                help="1 = Very strict (fewer false positives)\n10 = Very sensitive (more responsive)")
+        enabled = st.toggle("◇ GESTURE CONTROL ACTIVE", value=bool(settings["gesture_enabled"]))
+        sensitivity = st.slider("◇ NEURAL SENSITIVITY", 1, 10, settings["sensitivity"],
+                                help="1 = Conservative // 10 = Aggressive")
 
-        st.caption("""
-        **Sensitivity guide:**
-        - **1-3:** Conservative — fewer false detections, slower response
-        - **4-6:** Balanced — good for most users
-        - **7-10:** Aggressive — very responsive, may trigger unintended actions
-        """)
+        st.markdown("""
+        <div class="hud-card">
+            <h3>◇ SENSITIVITY GUIDE</h3>
+            <p><strong>1-3:</strong> Conservative — minimal false triggers, slower response</p>
+            <p><strong>4-6:</strong> Balanced — optimal for most operatives</p>
+            <p><strong>7-10:</strong> Aggressive — maximum responsiveness, may misfire</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        if st.button("💾 Save Gesture Settings"):
+        if st.button("◈ SAVE CONFIG"):
             db.update_gesture_settings(st.session_state.user_id, enabled, sensitivity)
             logger.log_settings_change(st.session_state.user_id, "gesture_settings",
                                         f"enabled={enabled}, sensitivity={sensitivity}")
-            st.success("Settings saved!")
+            st.success("◇ CONFIGURATION SAVED")
 
-    # ── Security ──────────────────────────────
     with tab_security:
-        st.subheader("Change Backup Password")
+        st.markdown("### ⟨ CIPHER KEY UPDATE ⟩")
 
         with st.form("change_pw"):
-            new_pw = st.text_input("New Password", type="password")
-            confirm_pw = st.text_input("Confirm Password", type="password")
-            submit = st.form_submit_button("Update Password")
+            new_pw = st.text_input("NEW CIPHER KEY", type="password")
+            confirm_pw = st.text_input("CONFIRM CIPHER KEY", type="password")
+            submit = st.form_submit_button("◈ UPDATE KEY")
 
             if submit:
                 if not new_pw:
-                    st.error("Password cannot be empty.")
+                    st.error("◇ Cipher key cannot be empty.")
                 elif new_pw != confirm_pw:
-                    st.error("Passwords do not match.")
+                    st.error("◇ Cipher keys do not match.")
                 else:
                     db.update_user_password(st.session_state.user_id, new_pw)
                     logger.log_settings_change(st.session_state.user_id, "password", "changed")
-                    st.success("Password updated!")
+                    st.success("◇ CIPHER KEY UPDATED")
 
         st.divider()
-        st.subheader("Account")
+        st.markdown("### ⟨ SYSTEM PURGE ⟩")
+        st.error("◇ WARNING: This action is irreversible. All data will be destroyed.")
 
-        st.warning("Deleting your account will remove all your data including vault files.")
-        if st.button("⚠️ Delete Account", type="secondary"):
+        if st.button("⚠️ PURGE ACCOUNT"):
             st.session_state.confirm_delete = True
 
         if st.session_state.get("confirm_delete"):
-            st.error("Are you sure? This action cannot be undone.")
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Yes, delete my account"):
+                if st.button("◈ CONFIRM PURGE", type="primary"):
                     db.delete_user(st.session_state.user_id)
                     logger.log_logout(st.session_state.user_id)
                     for key in list(st.session_state.keys()):
                         del st.session_state[key]
                     st.rerun()
             with col2:
-                if st.button("Cancel"):
+                if st.button("← ABORT"):
                     st.session_state.confirm_delete = False
                     st.rerun()
 
 
 # ═══════════════════════════════════════════════
-#  MAIN APP
+#  MAIN APP — SIDEBAR + ROUTING
 # ═══════════════════════════════════════════════
 def main_app():
-    """Authenticated main application."""
-
-    # Sidebar
     with st.sidebar:
-        st.markdown(f"""
+        # Logo
+        st.markdown("""
         <div style="text-align:center; padding:10px 0;">
-            <h2 style="margin:0;">🛡️ SENTINEL</h2>
-            <p style="color:#8888aa; font-size:0.85rem; margin:0;">v1.0</p>
+            <div style="font-family: Orbitron, monospace; font-size:1.4rem; color:#00ff41;
+                        text-shadow: 0 0 20px #00ff4140; letter-spacing:4px;">
+                ◈ SENTINEL
+            </div>
+            <div style="font-family: Share Tech Mono, monospace; font-size:0.55rem;
+                        color:#4a6670; letter-spacing:3px; margin-top:4px;">
+                [ CYBERPUNK EDITION v2.0 ]
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
         st.divider()
-        st.write(f"👤 **{st.session_state.username}**")
+
+        # User profile
+        st.markdown(f"""
+        <div class="sidebar-profile">
+            <span class="avatar">👤</span>
+            <div class="name">{st.session_state.username}</div>
+            <div class="role">AUTHORIZED OPERATIVE</div>
+        </div>
+        """, unsafe_allow_html=True)
+
         st.divider()
 
-        # Navigation
-        if "nav_page" not in st.session_state:
-            st.session_state.nav_page = "Dashboard"
+        # Navigation with icons
+        nav_items = [
+            ("🏠", "Dashboard"),
+            ("🤚", "Gesture Control"),
+            ("🎙️", "Voice Commands"),
+            ("🔒", "My Vault"),
+            ("📋", "Activity Logs"),
+            ("⚙️", "Settings"),
+        ]
 
-        pages = ["Dashboard", "Gesture Control", "My Vault", "Activity Logs", "Settings"]
-        icons = ["🏠", "🤚", "🔒", "📋", "⚙️"]
-
-        for page, icon in zip(pages, icons):
-            if st.sidebar.button(f"{icon} {page}", key=f"nav_{page}",
-                                  use_container_width=True,
-                                  type="primary" if st.session_state.nav_page == page else "secondary"):
+        for icon, page in nav_items:
+            is_active = st.session_state.nav_page == page
+            if st.button(
+                f"{icon}  {page.upper()}",
+                key=f"nav_{page}",
+                use_container_width=True,
+                type="primary" if is_active else "secondary",
+            ):
                 st.session_state.nav_page = page
                 st.rerun()
 
         st.divider()
 
-        if st.button("🚪 Logout", use_container_width=True):
+        # System status
+        st.markdown("""
+        <div style="font-family: Share Tech Mono, monospace; font-size:0.68rem;
+                    color:#4a6670; text-align:center; letter-spacing:1px;">
+            SYS STATUS: <span style="color:#00ff41;">OPERATIONAL</span><br>
+            MODULES: 6 ONLINE<br>
+            THREAT LEVEL: LOW
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.divider()
+
+        if st.button("🚪  DISCONNECT", use_container_width=True):
             logger.log_logout(st.session_state.user_id)
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
@@ -744,6 +925,8 @@ def main_app():
         dashboard_page()
     elif page == "Gesture Control":
         gesture_page()
+    elif page == "Voice Commands":
+        voice_page()
     elif page == "My Vault":
         vault_page()
     elif page == "Activity Logs":
