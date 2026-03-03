@@ -418,14 +418,16 @@ def gesture_page():
         else:
             st.markdown("""
             <div class="hud-card">
-                <p>Opens a camera window for real-time gesture detection</p>
-                <p>Press <strong>Q</strong> in the camera window to stop</p>
-                <p>Gestures are mapped to system keyboard shortcuts</p>
+                <h3>How It Works</h3>
+                <p>Opens a camera window — your hand controls the mouse cursor.</p>
+                <p>Actions fire <strong>once per gesture</strong> (no repeated triggers).</p>
+                <p>Close your <strong>fist</strong> anytime to pause tracking.</p>
+                <p>Press <strong>Q</strong> in the camera window to quit.</p>
             </div>
             """, unsafe_allow_html=True)
 
         new_sensitivity = st.slider("Sensitivity", 1, 10, sensitivity,
-                                     help="Higher = more responsive, may cause false triggers")
+                                     help="Higher = faster cursor, more responsive clicks")
 
         if new_sensitivity != sensitivity:
             db.update_gesture_settings(st.session_state.user_id, True, new_sensitivity)
@@ -443,16 +445,14 @@ def gesture_page():
         st.markdown("### Gesture Reference")
 
         gestures = [
-            ("✊", "FIST", "Minimize All"),
-            ("🖐️", "PALM", "Play/Pause"),
-            ("✌️", "PEACE", "Screenshot"),
-            ("👍", "THUMBS UP", "Vol +"),
-            ("🤘", "ROCK ON", "Vol -"),
-            ("3️⃣", "THREE", "Alt+Tab"),
-            ("🤙", "PINKY", "Mute"),
-            ("👉", "GUN", "Enter"),
-            ("←", "SWIPE L", "Previous"),
-            ("→", "SWIPE R", "Next"),
+            ("☝️", "INDEX FINGER", "Move mouse cursor"),
+            ("🤏", "PINCH", "Left click (thumb + index)"),
+            ("✌️", "V SIGN", "Scroll up / down"),
+            ("✊", "FIST", "Pause — stop tracking"),
+            ("🖐️", "OPEN PALM", "Right click"),
+            ("3️⃣", "THREE FINGERS", "Double click"),
+            ("👍", "THUMBS UP", "Volume Up"),
+            ("🤘", "ROCK ON", "Volume Down"),
         ]
 
         gesture_html = '<div style="display:flex; flex-wrap:wrap; gap:8px;">'
