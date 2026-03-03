@@ -223,7 +223,7 @@ git clone https://github.com/YOUR_USERNAME/sentinel.git
 cd sentinel
 
 # Windows:
-setup.bat
+install.bat
 
 # Linux/macOS:
 chmod +x install.sh && ./install.sh

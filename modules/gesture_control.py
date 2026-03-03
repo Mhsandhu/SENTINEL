@@ -20,7 +20,13 @@ Gesture → Action mapping:
 import cv2
 import mediapipe as mp
 import numpy as np
-import pyautogui
+try:
+    import pyautogui
+    pyautogui.FAILSAFE = False
+    pyautogui.PAUSE = 0
+    PYAUTOGUI_AVAILABLE = True
+except ImportError:
+    PYAUTOGUI_AVAILABLE = False
 import time
 import math
 import os
@@ -121,8 +127,9 @@ class GestureController:
         self.landmarker = HandLandmarker.create_from_options(options)
 
         # Pyautogui settings
-        pyautogui.FAILSAFE = False
-        pyautogui.PAUSE = 0
+        if PYAUTOGUI_AVAILABLE:
+            pyautogui.FAILSAFE = False
+            pyautogui.PAUSE = 0
 
         # Cooldowns (in frames)
         self.cooldown = {}
@@ -252,6 +259,8 @@ class GestureController:
         keys = action_info["keys"]
 
         try:
+            if not PYAUTOGUI_AVAILABLE:
+                return
             if action == "press":
                 pyautogui.press(keys[0])
             elif action == "hotkey":
