@@ -8,6 +8,11 @@ build/
 .venv/
 venv/
 
+# ── PyInstaller / Installer ────
+installer_output/
+build_log*.txt
+*.spec.bak
+
 # ── SENTINEL data ──────────────
 database/*.db
 vault_storage/
