@@ -11,7 +11,7 @@
 
 #define MyAppName      "SENTINEL"
 #define MyAppVersion   "2.2"
-#define MyAppPublisher "SENTINEL Security"
+#define MyAppPublisher "SANDHU"
 #define MyAppExeName   "SENTINEL.exe"
 #define MyAppURL       "https://github.com/Mhsandhu/SENTINEL"
 
@@ -34,6 +34,8 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 SetupLogging=yes
+SetupIconFile=logo.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -44,11 +46,12 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 [Files]
 ; Bundle everything from PyInstaller output
 Source: "dist\SENTINEL\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "logo.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}";   Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}";   Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\logo.ico"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\logo.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch SENTINEL"; Flags: nowait postinstall skipifsilent

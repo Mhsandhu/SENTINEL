@@ -41,7 +41,7 @@ WINDOW_HEIGHT = 900
 MIN_WIDTH = 1024
 MIN_HEIGHT = 700
 SERVER_TIMEOUT = 45          # seconds to wait for Streamlit to start
-ICON_NAME = "sentinel.ico"   # optional icon file
+ICON_NAME = \"logo.ico\"
 
 
 def get_base_dir():

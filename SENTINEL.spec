@@ -206,7 +206,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,            # no black console window
-    icon=None,                # set to "assets/sentinel.ico" if you add one
+    icon="logo.ico",          # app icon
 )
 
 coll = COLLECT(
